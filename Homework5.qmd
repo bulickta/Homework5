@@ -1,0 +1,116 @@
+---
+title: "ST 558 Homework5"
+author: "Thomas Bulick"
+date: "July 16, 2024"
+format: html
+editor: visual
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(ggpubr)
+library(caret)
+set.seed(28)
+```
+
+## Task 1: Conceptual Questions
+
+1.  What is the purpose of using cross-validation when fitting a random forest model?
+
+> Cross-validation can first help with model selection for a smaller data set where separating into training and test sets might not leave enough training data for effective modelling. Alternatively, Cross-validation can help to select the best value for the tuning parameter (value of m) of the random forest.
+
+2.  Describe the bagged tree algorithm.
+
+> The bagged tree algorithm essentially involves repeatedly sampling (with replacement) from the original sample, training a tree on the new sample and calculating predictions, and then averaging each prediction across the number of iterations of the algorithm, so ultimately there is a mean value for each prediction. Alternatively, in a classification version the same process is completed, but the "mean" value is instead just selected to be the most common result for each prediction.
+
+3.  What is meant by a general linear model?
+
+> A general linear model is a model that can take in both continuous and categorical data as predictors, and expects a continuous reponse variable with normally distributed residuals. This is in contrast to a "generalized" linear model with more flexible options for the reponse and flexibility in the expected distribution of the residuals.
+
+4.  When fitting a multiple linear regression model, what does adding an interaction term do? That is, what does it allow the model to do differently as compared to when it is not included in the model?
+
+> An interaction term allows the model to account for the possibility that the relationship between a certain predictor and the response may be influenced by a relationship between the predictor and another predictor. For instance, if there is a relationship between the weight of a vehicle and its expected miles per gallon, this relationship might also be changed by the number of cyclinders in the vehicle's engine, separate from the direct relationship between cylinders and MPG. An interaction term allows the model to account for this additional complexity.
+
+5.  Why do we split our data into a training and test set?
+
+> Splitting data into a training set and a test set is what allows for the comparison of prediction efficacy across different models, as several models can be trained on the same training set, and then a metric for model error, such as RMSE, can be compared to see which is "better" at prediction.
+
+## Task 2: Fitting Models
+
+```{r}
+rawdata <- read_csv("./heart.csv")
+missing1 <- colSums(is.na(rawdata))
+missing1
+```
+No formally "missing" data, but some 0 data that doesn't make sense as we will see in the charts below
+
+```{r}
+summary(rawdata)
+gg<-ggplot(rawdata,aes(x=as_factor(HeartDisease)))
+a <- gg+geom_bar()+labs(x="Heart Disease")
+b <- gg+geom_count(aes(y=Sex))+labs(x="Heart Disease")
+c <- gg+geom_count(aes(y=ChestPainType))+labs(x="Heart Disease")
+d <- gg+geom_count(aes(y=FastingBS))+labs(x="Heart Disease")
+e <- gg+geom_count(aes(y=RestingECG))+labs(x="Heart Disease")
+f <- gg+geom_count(aes(y=ExerciseAngina))+labs(x="Heart Disease")
+g <- gg+geom_boxplot(aes(y=Age,fill=as_factor(HeartDisease)))+labs(x="Heart Disease")
+h <- gg+geom_boxplot(aes(y=RestingBP,fill=as_factor(HeartDisease)))+labs(x="Heart Disease")
+i <- gg+geom_boxplot(aes(y=Cholesterol,fill=as_factor(HeartDisease)))+labs(x="Heart Disease")
+j <- gg+geom_boxplot(aes(y=MaxHR,fill=as_factor(HeartDisease)))+labs(x="Heart Disease")
+k <- gg+geom_boxplot(aes(y=Oldpeak,fill=as_factor(HeartDisease)))+labs(x="Heart Disease")
+
+ggarrange(a,b,c,d,e,f,g,h,i,j,k,ncol=2,nrow=2)
+
+selectdata <- rawdata |>
+  select(Age:Oldpeak,HeartDisease)
+
+Dummies <- predict(dummyVars(HeartDisease~.,data=selectdata),newdata=selectdata) |>
+  as_tibble()|>
+  select(starts_with("Sex"),starts_with("Chest"),starts_with("Resting"),starts_with("Exer")) |>
+  select(SexF:ChestPainTypeTA,RestingECGLVH:ExerciseAnginaY)
+
+cleandata <- bind_cols(selectdata,Dummies) |>
+  mutate(HeartDisease = as_factor(HeartDisease)) |>
+  select(Age,RestingBP:FastingBS,MaxHR,Oldpeak:ExerciseAnginaY)
+
+cleandata2 <- selectdata |>
+  mutate(HeartDisease = as_factor(HeartDisease))
+
+index <- createDataPartition(cleandata$HeartDisease,p = 0.7,list=FALSE)
+training <- cleandata[index,]
+test <- cleandata[-index,]
+training2 <- cleandata2[index,]
+test2 <- cleandata2[-index,]
+
+knnModel <- train(HeartDisease~.,data=training,method="knn",
+                  trControl=trainControl(method="repeatedcv",number=10,repeats = 3),
+                  preProcess=c("center","scale"),tuneGrid=expand.grid(k=c(1:40)))
+knnModel
+confusionMatrix(data=test$HeartDisease,reference=predict(knnModel,newdata=test))
+
+logModel1 <- train(HeartDisease~.,data=training2,method="glm",family="binomial",preProcess=c("center","scale"),trControl=trainControl(method="repeatedcv",number=10,repeats = 3))
+
+logModel2 <- train(HeartDisease~Age,data=training2,method="glm",family="binomial",preProcess=c("center","scale"),trControl=trainControl(method="repeatedcv",number=10,repeats = 3))
+
+logModel3 <- train(HeartDisease~ExerciseAngina*Age*Oldpeak*MaxHR,data=training2,method="glm",family="binomial",preProcess=c("center","scale"),trControl=trainControl(method="repeatedcv",number=10,repeats = 3))
+
+confusionMatrix(reference=test2$HeartDisease,data=predict(logModel1,newdata=test2))
+confusionMatrix(reference=test2$HeartDisease,data=predict(logModel2,newdata=test2))
+confusionMatrix(reference=test2$HeartDisease,data=predict(logModel3,newdata=test2))
+logModel1$finalModel
+logModel2$finalModel
+logModel3$finalModel
+
+```
+Three logistic options - full model
+Age alone
+ExerciseAngina, Age, Oldpeak, MaxHR
+
+You can add options to executable code like this
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
