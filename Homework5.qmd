@@ -10,6 +10,8 @@ editor: visual
 library(tidyverse)
 library(ggpubr)
 library(caret)
+library(randomForest)
+library(gbm3)
 set.seed(28)
 ```
 
@@ -37,13 +39,16 @@ set.seed(28)
 
 ## Task 2: Fitting Models
 
+#### EDA and Data Preparation
+
+We begin by reading in our data of interest, and checking for any missing values. Notably, there is no "missing" data, but as we will see in the plots below, there are a few data issues, especially with Cholesterol containing a significant number of "0" values, which is obviously not a real measurement. That said, none of the variables have issues that would ultimately prevent them from usage.
 ```{r}
 rawdata <- read_csv("./heart.csv")
 missing1 <- colSums(is.na(rawdata))
 missing1
 ```
-No formally "missing" data, but some 0 data that doesn't make sense as we will see in the charts below
 
+Next, we then create some summaries, noting from the summary statistics that the wide variety of scales indicates we should like center and scale all our data (which is included in all models in this assignment), and noting that several variables appear to correlate significantly with Heart Disease, namely: Exercise Angina, Age, Max HR, and Oldpeak.
 ```{r}
 summary(rawdata)
 gg<-ggplot(rawdata,aes(x=as_factor(HeartDisease)))
@@ -60,7 +65,11 @@ j <- gg+geom_boxplot(aes(y=MaxHR,fill=as_factor(HeartDisease)))+labs(x="Heart Di
 k <- gg+geom_boxplot(aes(y=Oldpeak,fill=as_factor(HeartDisease)))+labs(x="Heart Disease")
 
 ggarrange(a,b,c,d,e,f,g,h,i,j,k,ncol=2,nrow=2)
+```
 
+#### Cleaning and Splitting Data
+After our EDA, we do some data transformations, ultimately outputting four data sets: "training" and "test," which are partitions of the original data containing dummy variables for the four categorical variables (needed for for the KNN model), and "training2" and "test2" which has the same partition but without needing the extra dummy variables for ease of use in the other models.
+```{r}
 selectdata <- rawdata |>
   select(Age:Oldpeak,HeartDisease)
 
@@ -82,35 +91,103 @@ test <- cleandata[-index,]
 training2 <- cleandata2[index,]
 test2 <- cleandata2[-index,]
 
+head(training)
+head(test)
+head(training2)
+head(test2)
+```
+
+#### kNN Model
+We fit the kNN model, noting the optimal parameter of k below, and when predicting test data resulting in an accuracy of 80.73%. Notably, I chose to fit the full model with all explanatory variables.
+```{r}
 knnModel <- train(HeartDisease~.,data=training,method="knn",
                   trControl=trainControl(method="repeatedcv",number=10,repeats = 3),
                   preProcess=c("center","scale"),tuneGrid=expand.grid(k=c(1:40)))
-knnModel
-confusionMatrix(data=test$HeartDisease,reference=predict(knnModel,newdata=test))
 
+knnModel$bestTune
+confusionMatrix(data=test$HeartDisease,reference=predict(knnModel,newdata=test))$overall[1]
+```
+#### Logistic Regression Models
+Next we fit three logistic regression models - one containing the full set of all potential explanatory variables, one only using Age as a variable, and one using the four variables that appear to correlate most strongly: exercise angina, age, oldpeak, and max HR.
+```{r}
 logModel1 <- train(HeartDisease~.,data=training2,method="glm",family="binomial",preProcess=c("center","scale"),trControl=trainControl(method="repeatedcv",number=10,repeats = 3))
 
 logModel2 <- train(HeartDisease~Age,data=training2,method="glm",family="binomial",preProcess=c("center","scale"),trControl=trainControl(method="repeatedcv",number=10,repeats = 3))
 
 logModel3 <- train(HeartDisease~ExerciseAngina*Age*Oldpeak*MaxHR,data=training2,method="glm",family="binomial",preProcess=c("center","scale"),trControl=trainControl(method="repeatedcv",number=10,repeats = 3))
+```
 
-confusionMatrix(reference=test2$HeartDisease,data=predict(logModel1,newdata=test2))
-confusionMatrix(reference=test2$HeartDisease,data=predict(logModel2,newdata=test2))
-confusionMatrix(reference=test2$HeartDisease,data=predict(logModel3,newdata=test2))
+Comparing these three models, we see the preferred model according to AIC is the full model, and according to the test prediction accuracy is also the full model, so of these three options we select the full logistic regression model.
+```{r}
 logModel1$finalModel
 logModel2$finalModel
 logModel3$finalModel
 
+confusionMatrix(reference=test2$HeartDisease,data=predict(logModel1,newdata=test2))$overall[1]
+confusionMatrix(reference=test2$HeartDisease,data=predict(logModel2,newdata=test2))$overall[1]
+confusionMatrix(reference=test2$HeartDisease,data=predict(logModel3,newdata=test2))$overall[1]
 ```
-Three logistic options - full model
-Age alone
-ExerciseAngina, Age, Oldpeak, MaxHR
 
-You can add options to executable code like this
+#### Tree Models
 
+For the classification tree model, random forest model, and boosted tree model, I tried three combinations of variables for each, mimicking the options for logistic regression with a full model, an age-only model, and an Angina/Age/Oldpeak/Max HR model
 ```{r}
-#| echo: false
-2 * 2
+treeModel1 <- train(HeartDisease~.,data=training2,method="rpart",preProcess=c("center","scale"),trControl=trainControl(method="repeatedcv",number=10,repeats=3),tuneGrid=expand.grid(cp=seq(0,0.1,0.001)))
+
+treeModel2 <- train(HeartDisease~Age,data=training2,method="rpart",preProcess=c("center","scale"),trControl=trainControl(method="repeatedcv",number=10,repeats=3),tuneGrid=expand.grid(cp=seq(0,0.1,0.001)))
+
+treeModel3 <- train(HeartDisease~ExerciseAngina*Age*Oldpeak*MaxHR,data=training2,method="rpart",preProcess=c("center","scale"),trControl=trainControl(method="repeatedcv",number=10,repeats=3),tuneGrid=expand.grid(cp=seq(0,0.1,0.001)))
+
+forestModel1 <- train(HeartDisease~.,data=training2,method="rf",preProcess=c("center","scale"),trControl=trainControl(method="repeatedcv",number=10,repeats=3),tuneGrid=expand.grid(mtry=c(1:10)))
+
+forestModel2 <- train(HeartDisease~Age,data=training2,method="rf",preProcess=c("center","scale"),trControl=trainControl(method="repeatedcv",number=10,repeats=3),tuneGrid=expand.grid(mtry=c(1)))
+
+forestModel3 <- train(HeartDisease~ExerciseAngina*Age*Oldpeak*MaxHR,data=training2,method="rf",preProcess=c("center","scale"),trControl=trainControl(method="repeatedcv",number=10,repeats=3),tuneGrid=expand.grid(mtry=c(1:4)))
+
+boostModel1 <- train(HeartDisease~.,data=training2,method="gbm",preProcess=c("center","scale"),trControl=trainControl(method="repeatedcv",number=10,repeats=3),tuneGrid=expand.grid(n.trees=c(25,50,100,200),interaction.depth=c(1,2,3),shrinkage=0.1,n.minobsinnode=10),verbose = FALSE)
+
+boostModel2 <- train(HeartDisease~Age,data=training2,method="gbm",preProcess=c("center","scale"),trControl=trainControl(method="repeatedcv",number=10,repeats=3),tuneGrid=expand.grid(n.trees=c(25,50,100,200),interaction.depth=c(1,2,3),shrinkage=0.1,n.minobsinnode=10),verbose = FALSE)
+
+boostModel3 <- train(HeartDisease~ExerciseAngina*Age*Oldpeak*MaxHR,data=training2,method="gbm",preProcess=c("center","scale"),trControl=trainControl(method="repeatedcv",number=10,repeats=3),tuneGrid=expand.grid(n.trees=c(25,50,100,200),interaction.depth=c(1,2,3),shrinkage=0.1,n.minobsinnode=10),verbose = FALSE)
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+Comparing the tree models, we see that according to the prediction accuracy the full model again should be selected, with an optimal tuning of cp noted below.
+```{r}
+confusionMatrix(reference=test2$HeartDisease,data=predict(treeModel1,newdata=test2))$overall[1]
+confusionMatrix(reference=test2$HeartDisease,data=predict(treeModel2,newdata=test2))$overall[1]
+confusionMatrix(reference=test2$HeartDisease,data=predict(treeModel3,newdata=test2))$overall[1]
+treeModel1$best
+```
+
+
+Comparing the forest models, we see that according to the prediction accuracy the full variable model again should be selected, with optimal tuning of mtry noted below.
+```{r}
+confusionMatrix(reference=test2$HeartDisease,data=predict(forestModel1,newdata=test2))$overall[1]
+confusionMatrix(reference=test2$HeartDisease,data=predict(forestModel2,newdata=test2))$overall[1]
+confusionMatrix(reference=test2$HeartDisease,data=predict(forestModel3,newdata=test2))$overall[1]
+forestModel1$bestTune
+```
+
+
+Comparing the boosted models, we see that according to prediction accuracy, the full variable model again should be selected, with optimal tuning variables noted below
+```{r}
+confusionMatrix(reference=test2$HeartDisease,data=predict(boostModel1,newdata=test2))$overall[1]
+confusionMatrix(reference=test2$HeartDisease,data=predict(boostModel2,newdata=test2))$overall[1]
+confusionMatrix(reference=test2$HeartDisease,data=predict(boostModel3,newdata=test2))$overall[1]
+boostModel1$bestTune
+```
+
+Lastly, comparing all of our models together, we see that the ultimate winner for best prediction of this data is the Boosted Tree model using all possible explanatory variables, and with tuning variables as noted below. Although it should be noted that with the calculated confidence intervals, most of these results do technically overlap, suggesting it could be preferable to instead choose the least resource intensive model.
+```{r}
+knnResult <- confusionMatrix(data=test$HeartDisease,reference=predict(knnModel,newdata=test))$overall[c(1,3,4)]
+logResult <- confusionMatrix(reference=test2$HeartDisease,data=predict(logModel1,newdata=test2))$overall[c(1,3,4)]
+treeResult <- confusionMatrix(reference=test2$HeartDisease,data=predict(treeModel1,newdata=test2))$overall[c(1,3,4)]
+forestResult <- confusionMatrix(reference=test2$HeartDisease,data=predict(forestModel1,newdata=test2))$overall[c(1,3,4)]
+boostResult <- confusionMatrix(reference=test2$HeartDisease,data=predict(boostModel1,newdata=test2))$overall[c(1,3,4)]
+results <-  as.data.frame(bind_cols(knnResult,logResult,treeResult,forestResult,boostResult))
+colnames(results) <- c("kNN","Logistic Regression","Classification Tree","Random Forest","Boosted Tree")
+rownames(results) <- c("Accuracy (Percentage)","Lower CI","Upper CI")
+results
+boostModel1$bestTune
+```
+

@@ -182,6 +182,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="task-2-fitting-models" class="level2">
 <h2 class="anchored" data-anchor-id="task-2-fitting-models">Task 2: Fitting Models</h2>
+<section id="eda-and-data-preparation" class="level4">
+<h4 class="anchored" data-anchor-id="eda-and-data-preparation">EDA and Data Preparation</h4>
+<p>We begin by reading in our data of interest, and checking for any missing values. Notably, there is no “missing” data, but as we will see in the plots below, there are a few data issues, especially with Cholesterol containing a significant number of “0” values, which is obviously not a real measurement. That said, none of the variables have issues that would ultimately prevent them from usage.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>rawdata <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"./heart.csv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
@@ -194,8 +197,8 @@ dbl (7): Age, RestingBP, Cholesterol, FastingBS, MaxHR, Oldpeak, HeartDisease
 ℹ Use `spec()` to retrieve the full column specification for this data.
 ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>missing <span class="ot">&lt;-</span> <span class="fu">colSums</span>(<span class="fu">is.na</span>(rawdata))</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>missing</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>missing1 <span class="ot">&lt;-</span> <span class="fu">colSums</span>(<span class="fu">is.na</span>(rawdata))</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>missing1</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>           Age            Sex  ChestPainType      RestingBP    Cholesterol 
              0              0              0              0              0 
@@ -204,40 +207,408 @@ dbl (7): Age, RestingBP, Cholesterol, FastingBS, MaxHR, Oldpeak, HeartDisease
       ST_Slope   HeartDisease 
              0              0 </code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>gg<span class="ot">&lt;-</span><span class="fu">ggplot</span>(rawdata,<span class="fu">aes</span>(<span class="at">x=</span><span class="fu">as_factor</span>(HeartDisease)))</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>a <span class="ot">&lt;-</span> gg<span class="sc">+</span><span class="fu">geom_bar</span>()<span class="sc">+</span><span class="fu">labs</span>(<span class="at">x=</span><span class="st">"Heart Disease"</span>)</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>b <span class="ot">&lt;-</span> gg<span class="sc">+</span><span class="fu">geom_count</span>(<span class="fu">aes</span>(<span class="at">y=</span>Sex))<span class="sc">+</span><span class="fu">labs</span>(<span class="at">x=</span><span class="st">"Heart Disease"</span>)</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>c <span class="ot">&lt;-</span> gg<span class="sc">+</span><span class="fu">geom_count</span>(<span class="fu">aes</span>(<span class="at">y=</span>ChestPainType))<span class="sc">+</span><span class="fu">labs</span>(<span class="at">x=</span><span class="st">"Heart Disease"</span>)</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> gg<span class="sc">+</span><span class="fu">geom_count</span>(<span class="fu">aes</span>(<span class="at">y=</span>FastingBS))<span class="sc">+</span><span class="fu">labs</span>(<span class="at">x=</span><span class="st">"Heart Disease"</span>)</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>e <span class="ot">&lt;-</span> gg<span class="sc">+</span><span class="fu">geom_count</span>(<span class="fu">aes</span>(<span class="at">y=</span>RestingECG))<span class="sc">+</span><span class="fu">labs</span>(<span class="at">x=</span><span class="st">"Heart Disease"</span>)</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>f <span class="ot">&lt;-</span> gg<span class="sc">+</span><span class="fu">geom_count</span>(<span class="fu">aes</span>(<span class="at">y=</span>ExerciseAngina))<span class="sc">+</span><span class="fu">labs</span>(<span class="at">x=</span><span class="st">"Heart Disease"</span>)</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>g <span class="ot">&lt;-</span> gg<span class="sc">+</span><span class="fu">geom_boxplot</span>(<span class="fu">aes</span>(<span class="at">y=</span>Age,<span class="at">fill=</span><span class="fu">as_factor</span>(HeartDisease)))<span class="sc">+</span><span class="fu">labs</span>(<span class="at">x=</span><span class="st">"Heart Disease"</span>)</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>h <span class="ot">&lt;-</span> gg<span class="sc">+</span><span class="fu">geom_boxplot</span>(<span class="fu">aes</span>(<span class="at">y=</span>RestingBP,<span class="at">fill=</span><span class="fu">as_factor</span>(HeartDisease)))<span class="sc">+</span><span class="fu">labs</span>(<span class="at">x=</span><span class="st">"Heart Disease"</span>)</span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>i <span class="ot">&lt;-</span> gg<span class="sc">+</span><span class="fu">geom_boxplot</span>(<span class="fu">aes</span>(<span class="at">y=</span>Cholesterol,<span class="at">fill=</span><span class="fu">as_factor</span>(HeartDisease)))<span class="sc">+</span><span class="fu">labs</span>(<span class="at">x=</span><span class="st">"Heart Disease"</span>)</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>j <span class="ot">&lt;-</span> gg<span class="sc">+</span><span class="fu">geom_boxplot</span>(<span class="fu">aes</span>(<span class="at">y=</span>MaxHR,<span class="at">fill=</span><span class="fu">as_factor</span>(HeartDisease)))<span class="sc">+</span><span class="fu">labs</span>(<span class="at">x=</span><span class="st">"Heart Disease"</span>)</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>k <span class="ot">&lt;-</span> gg<span class="sc">+</span><span class="fu">geom_boxplot</span>(<span class="fu">aes</span>(<span class="at">y=</span>Oldpeak,<span class="at">fill=</span><span class="fu">as_factor</span>(HeartDisease)))<span class="sc">+</span><span class="fu">labs</span>(<span class="at">x=</span><span class="st">"Heart Disease"</span>)</span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="fu">ggarrange</span>(a,b,c,d,e,f,g,h,i,j,k,<span class="at">ncol=</span><span class="dv">6</span>,<span class="at">nrow=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Next, we then create some summaries, noting from the summary statistics that the wide variety of scales indicates we should like center and scale all our data (which is included in all models in this assignment), and noting that several variables appear to correlate significantly with Heart Disease, namely: Exercise Angina, Age, Max HR, and Oldpeak.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(rawdata)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>      Age            Sex            ChestPainType        RestingBP    
+ Min.   :28.00   Length:918         Length:918         Min.   :  0.0  
+ 1st Qu.:47.00   Class :character   Class :character   1st Qu.:120.0  
+ Median :54.00   Mode  :character   Mode  :character   Median :130.0  
+ Mean   :53.51                                         Mean   :132.4  
+ 3rd Qu.:60.00                                         3rd Qu.:140.0  
+ Max.   :77.00                                         Max.   :200.0  
+  Cholesterol      FastingBS       RestingECG            MaxHR      
+ Min.   :  0.0   Min.   :0.0000   Length:918         Min.   : 60.0  
+ 1st Qu.:173.2   1st Qu.:0.0000   Class :character   1st Qu.:120.0  
+ Median :223.0   Median :0.0000   Mode  :character   Median :138.0  
+ Mean   :198.8   Mean   :0.2331                      Mean   :136.8  
+ 3rd Qu.:267.0   3rd Qu.:0.0000                      3rd Qu.:156.0  
+ Max.   :603.0   Max.   :1.0000                      Max.   :202.0  
+ ExerciseAngina        Oldpeak          ST_Slope          HeartDisease   
+ Length:918         Min.   :-2.6000   Length:918         Min.   :0.0000  
+ Class :character   1st Qu.: 0.0000   Class :character   1st Qu.:0.0000  
+ Mode  :character   Median : 0.6000   Mode  :character   Median :1.0000  
+                    Mean   : 0.8874                      Mean   :0.5534  
+                    3rd Qu.: 1.5000                      3rd Qu.:1.0000  
+                    Max.   : 6.2000                      Max.   :1.0000  </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>gg<span class="ot">&lt;-</span><span class="fu">ggplot</span>(rawdata,<span class="fu">aes</span>(<span class="at">x=</span><span class="fu">as_factor</span>(HeartDisease)))</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>a <span class="ot">&lt;-</span> gg<span class="sc">+</span><span class="fu">geom_bar</span>()<span class="sc">+</span><span class="fu">labs</span>(<span class="at">x=</span><span class="st">"Heart Disease"</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>b <span class="ot">&lt;-</span> gg<span class="sc">+</span><span class="fu">geom_count</span>(<span class="fu">aes</span>(<span class="at">y=</span>Sex))<span class="sc">+</span><span class="fu">labs</span>(<span class="at">x=</span><span class="st">"Heart Disease"</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>c <span class="ot">&lt;-</span> gg<span class="sc">+</span><span class="fu">geom_count</span>(<span class="fu">aes</span>(<span class="at">y=</span>ChestPainType))<span class="sc">+</span><span class="fu">labs</span>(<span class="at">x=</span><span class="st">"Heart Disease"</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> gg<span class="sc">+</span><span class="fu">geom_count</span>(<span class="fu">aes</span>(<span class="at">y=</span>FastingBS))<span class="sc">+</span><span class="fu">labs</span>(<span class="at">x=</span><span class="st">"Heart Disease"</span>)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>e <span class="ot">&lt;-</span> gg<span class="sc">+</span><span class="fu">geom_count</span>(<span class="fu">aes</span>(<span class="at">y=</span>RestingECG))<span class="sc">+</span><span class="fu">labs</span>(<span class="at">x=</span><span class="st">"Heart Disease"</span>)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>f <span class="ot">&lt;-</span> gg<span class="sc">+</span><span class="fu">geom_count</span>(<span class="fu">aes</span>(<span class="at">y=</span>ExerciseAngina))<span class="sc">+</span><span class="fu">labs</span>(<span class="at">x=</span><span class="st">"Heart Disease"</span>)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>g <span class="ot">&lt;-</span> gg<span class="sc">+</span><span class="fu">geom_boxplot</span>(<span class="fu">aes</span>(<span class="at">y=</span>Age,<span class="at">fill=</span><span class="fu">as_factor</span>(HeartDisease)))<span class="sc">+</span><span class="fu">labs</span>(<span class="at">x=</span><span class="st">"Heart Disease"</span>)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>h <span class="ot">&lt;-</span> gg<span class="sc">+</span><span class="fu">geom_boxplot</span>(<span class="fu">aes</span>(<span class="at">y=</span>RestingBP,<span class="at">fill=</span><span class="fu">as_factor</span>(HeartDisease)))<span class="sc">+</span><span class="fu">labs</span>(<span class="at">x=</span><span class="st">"Heart Disease"</span>)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>i <span class="ot">&lt;-</span> gg<span class="sc">+</span><span class="fu">geom_boxplot</span>(<span class="fu">aes</span>(<span class="at">y=</span>Cholesterol,<span class="at">fill=</span><span class="fu">as_factor</span>(HeartDisease)))<span class="sc">+</span><span class="fu">labs</span>(<span class="at">x=</span><span class="st">"Heart Disease"</span>)</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>j <span class="ot">&lt;-</span> gg<span class="sc">+</span><span class="fu">geom_boxplot</span>(<span class="fu">aes</span>(<span class="at">y=</span>MaxHR,<span class="at">fill=</span><span class="fu">as_factor</span>(HeartDisease)))<span class="sc">+</span><span class="fu">labs</span>(<span class="at">x=</span><span class="st">"Heart Disease"</span>)</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>k <span class="ot">&lt;-</span> gg<span class="sc">+</span><span class="fu">geom_boxplot</span>(<span class="fu">aes</span>(<span class="at">y=</span>Oldpeak,<span class="at">fill=</span><span class="fu">as_factor</span>(HeartDisease)))<span class="sc">+</span><span class="fu">labs</span>(<span class="at">x=</span><span class="st">"Heart Disease"</span>)</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="fu">ggarrange</span>(a,b,c,d,e,f,g,h,i,j,k,<span class="at">ncol=</span><span class="dv">2</span>,<span class="at">nrow=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$`1`</code></pre>
+</div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="Homework5_files/figure-html/unnamed-chunk-1-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="Homework5_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>cleandata <span class="ot">&lt;-</span> rawdata <span class="sc">|&gt;</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">HeartDisease =</span> <span class="fu">factor</span>(HeartDisease)) <span class="sc">|&gt;</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(Age<span class="sc">:</span>Oldpeak,HeartDisease)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<p>You can add options to executable code like this</p>
-<div class="cell">
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 4</code></pre>
+<pre><code>
+$`2`</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Homework5_files/figure-html/unnamed-chunk-2-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
 </div>
 </div>
-<p>The <code>echo: false</code> option disables the printing of code (only output is displayed).</p>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+$`3`</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Homework5_files/figure-html/unnamed-chunk-2-3.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+attr(,"class")
+[1] "list"      "ggarrange"</code></pre>
+</div>
+</div>
+</section>
+<section id="cleaning-and-splitting-data" class="level4">
+<h4 class="anchored" data-anchor-id="cleaning-and-splitting-data">Cleaning and Splitting Data</h4>
+<p>After our EDA, we do some data transformations, ultimately outputting four data sets: “training” and “test,” which are partitions of the original data containing dummy variables for the four categorical variables (needed for for the KNN model), and “training2” and “test2” which has the same partition but without needing the extra dummy variables for ease of use in the other models.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>selectdata <span class="ot">&lt;-</span> rawdata <span class="sc">|&gt;</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(Age<span class="sc">:</span>Oldpeak,HeartDisease)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>Dummies <span class="ot">&lt;-</span> <span class="fu">predict</span>(<span class="fu">dummyVars</span>(HeartDisease<span class="sc">~</span>.,<span class="at">data=</span>selectdata),<span class="at">newdata=</span>selectdata) <span class="sc">|&gt;</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as_tibble</span>()<span class="sc">|&gt;</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="fu">starts_with</span>(<span class="st">"Sex"</span>),<span class="fu">starts_with</span>(<span class="st">"Chest"</span>),<span class="fu">starts_with</span>(<span class="st">"Resting"</span>),<span class="fu">starts_with</span>(<span class="st">"Exer"</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(SexF<span class="sc">:</span>ChestPainTypeTA,RestingECGLVH<span class="sc">:</span>ExerciseAnginaY)</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>cleandata <span class="ot">&lt;-</span> <span class="fu">bind_cols</span>(selectdata,Dummies) <span class="sc">|&gt;</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">HeartDisease =</span> <span class="fu">as_factor</span>(HeartDisease)) <span class="sc">|&gt;</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(Age,RestingBP<span class="sc">:</span>FastingBS,MaxHR,Oldpeak<span class="sc">:</span>ExerciseAnginaY)</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>cleandata2 <span class="ot">&lt;-</span> selectdata <span class="sc">|&gt;</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">HeartDisease =</span> <span class="fu">as_factor</span>(HeartDisease))</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>index <span class="ot">&lt;-</span> <span class="fu">createDataPartition</span>(cleandata<span class="sc">$</span>HeartDisease,<span class="at">p =</span> <span class="fl">0.7</span>,<span class="at">list=</span><span class="cn">FALSE</span>)</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>training <span class="ot">&lt;-</span> cleandata[index,]</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>test <span class="ot">&lt;-</span> cleandata[<span class="sc">-</span>index,]</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>training2 <span class="ot">&lt;-</span> cleandata2[index,]</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>test2 <span class="ot">&lt;-</span> cleandata2[<span class="sc">-</span>index,]</span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(training)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 18
+    Age RestingBP Cholesterol FastingBS MaxHR Oldpeak HeartDisease  SexF  SexM
+  &lt;dbl&gt;     &lt;dbl&gt;       &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt; &lt;fct&gt;        &lt;dbl&gt; &lt;dbl&gt;
+1    49       160         180         0   156     1   1                1     0
+2    37       130         283         0    98     0   0                0     1
+3    54       150         195         0   122     0   0                0     1
+4    45       130         237         0   170     0   0                1     0
+5    37       140         207         0   130     1.5 1                0     1
+6    48       120         284         0   120     0   0                1     0
+# ℹ 9 more variables: ChestPainTypeASY &lt;dbl&gt;, ChestPainTypeATA &lt;dbl&gt;,
+#   ChestPainTypeNAP &lt;dbl&gt;, ChestPainTypeTA &lt;dbl&gt;, RestingECGLVH &lt;dbl&gt;,
+#   RestingECGNormal &lt;dbl&gt;, RestingECGST &lt;dbl&gt;, ExerciseAnginaN &lt;dbl&gt;,
+#   ExerciseAnginaY &lt;dbl&gt;</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(test)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 18
+    Age RestingBP Cholesterol FastingBS MaxHR Oldpeak HeartDisease  SexF  SexM
+  &lt;dbl&gt;     &lt;dbl&gt;       &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt; &lt;fct&gt;        &lt;dbl&gt; &lt;dbl&gt;
+1    40       140         289         0   172     0   0                0     1
+2    48       138         214         0   108     1.5 1                1     0
+3    39       120         339         0   170     0   0                0     1
+4    54       110         208         0   142     0   0                0     1
+5    42       115         211         0   137     0   0                1     0
+6    43       120         201         0   165     0   0                1     0
+# ℹ 9 more variables: ChestPainTypeASY &lt;dbl&gt;, ChestPainTypeATA &lt;dbl&gt;,
+#   ChestPainTypeNAP &lt;dbl&gt;, ChestPainTypeTA &lt;dbl&gt;, RestingECGLVH &lt;dbl&gt;,
+#   RestingECGNormal &lt;dbl&gt;, RestingECGST &lt;dbl&gt;, ExerciseAnginaN &lt;dbl&gt;,
+#   ExerciseAnginaY &lt;dbl&gt;</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(training2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 11
+    Age Sex   ChestPainType RestingBP Cholesterol FastingBS RestingECG MaxHR
+  &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;             &lt;dbl&gt;       &lt;dbl&gt;     &lt;dbl&gt; &lt;chr&gt;      &lt;dbl&gt;
+1    49 F     NAP                 160         180         0 Normal       156
+2    37 M     ATA                 130         283         0 ST            98
+3    54 M     NAP                 150         195         0 Normal       122
+4    45 F     ATA                 130         237         0 Normal       170
+5    37 M     ASY                 140         207         0 Normal       130
+6    48 F     ATA                 120         284         0 Normal       120
+# ℹ 3 more variables: ExerciseAngina &lt;chr&gt;, Oldpeak &lt;dbl&gt;, HeartDisease &lt;fct&gt;</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(test2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 11
+    Age Sex   ChestPainType RestingBP Cholesterol FastingBS RestingECG MaxHR
+  &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;             &lt;dbl&gt;       &lt;dbl&gt;     &lt;dbl&gt; &lt;chr&gt;      &lt;dbl&gt;
+1    40 M     ATA                 140         289         0 Normal       172
+2    48 F     ASY                 138         214         0 Normal       108
+3    39 M     NAP                 120         339         0 Normal       170
+4    54 M     ATA                 110         208         0 Normal       142
+5    42 F     NAP                 115         211         0 ST           137
+6    43 F     ATA                 120         201         0 Normal       165
+# ℹ 3 more variables: ExerciseAngina &lt;chr&gt;, Oldpeak &lt;dbl&gt;, HeartDisease &lt;fct&gt;</code></pre>
+</div>
+</div>
+</section>
+<section id="knn-model" class="level4">
+<h4 class="anchored" data-anchor-id="knn-model">kNN Model</h4>
+<p>We fit the kNN model, noting the optimal parameter of k below, and when predicting test data resulting in an accuracy of 80.73%. Notably, I chose to fit the full model with all explanatory variables.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>knnModel <span class="ot">&lt;-</span> <span class="fu">train</span>(HeartDisease<span class="sc">~</span>.,<span class="at">data=</span>training,<span class="at">method=</span><span class="st">"knn"</span>,</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>                  <span class="at">trControl=</span><span class="fu">trainControl</span>(<span class="at">method=</span><span class="st">"repeatedcv"</span>,<span class="at">number=</span><span class="dv">10</span>,<span class="at">repeats =</span> <span class="dv">3</span>),</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>                  <span class="at">preProcess=</span><span class="fu">c</span>(<span class="st">"center"</span>,<span class="st">"scale"</span>),<span class="at">tuneGrid=</span><span class="fu">expand.grid</span>(<span class="at">k=</span><span class="fu">c</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">40</span>)))</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>knnModel<span class="sc">$</span>bestTune</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>    k
+24 24</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">confusionMatrix</span>(<span class="at">data=</span>test<span class="sc">$</span>HeartDisease,<span class="at">reference=</span><span class="fu">predict</span>(knnModel,<span class="at">newdata=</span>test))<span class="sc">$</span>overall[<span class="dv">1</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> Accuracy 
+0.8072727 </code></pre>
+</div>
+</div>
+</section>
+<section id="logistic-regression-models" class="level4">
+<h4 class="anchored" data-anchor-id="logistic-regression-models">Logistic Regression Models</h4>
+<p>Next we fit three logistic regression models - one containing the full set of all potential explanatory variables, one only using Age as a variable, and one using the four variables that appear to correlate most strongly: exercise angina, age, oldpeak, and max HR.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>logModel1 <span class="ot">&lt;-</span> <span class="fu">train</span>(HeartDisease<span class="sc">~</span>.,<span class="at">data=</span>training2,<span class="at">method=</span><span class="st">"glm"</span>,<span class="at">family=</span><span class="st">"binomial"</span>,<span class="at">preProcess=</span><span class="fu">c</span>(<span class="st">"center"</span>,<span class="st">"scale"</span>),<span class="at">trControl=</span><span class="fu">trainControl</span>(<span class="at">method=</span><span class="st">"repeatedcv"</span>,<span class="at">number=</span><span class="dv">10</span>,<span class="at">repeats =</span> <span class="dv">3</span>))</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>logModel2 <span class="ot">&lt;-</span> <span class="fu">train</span>(HeartDisease<span class="sc">~</span>Age,<span class="at">data=</span>training2,<span class="at">method=</span><span class="st">"glm"</span>,<span class="at">family=</span><span class="st">"binomial"</span>,<span class="at">preProcess=</span><span class="fu">c</span>(<span class="st">"center"</span>,<span class="st">"scale"</span>),<span class="at">trControl=</span><span class="fu">trainControl</span>(<span class="at">method=</span><span class="st">"repeatedcv"</span>,<span class="at">number=</span><span class="dv">10</span>,<span class="at">repeats =</span> <span class="dv">3</span>))</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>logModel3 <span class="ot">&lt;-</span> <span class="fu">train</span>(HeartDisease<span class="sc">~</span>ExerciseAngina<span class="sc">*</span>Age<span class="sc">*</span>Oldpeak<span class="sc">*</span>MaxHR,<span class="at">data=</span>training2,<span class="at">method=</span><span class="st">"glm"</span>,<span class="at">family=</span><span class="st">"binomial"</span>,<span class="at">preProcess=</span><span class="fu">c</span>(<span class="st">"center"</span>,<span class="st">"scale"</span>),<span class="at">trControl=</span><span class="fu">trainControl</span>(<span class="at">method=</span><span class="st">"repeatedcv"</span>,<span class="at">number=</span><span class="dv">10</span>,<span class="at">repeats =</span> <span class="dv">3</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Comparing these three models, we see the preferred model according to AIC is the full model, and according to the test prediction accuracy is also the full model, so of these three options we select the full logistic regression model.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>logModel1<span class="sc">$</span>finalModel</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:  NULL
+
+Coefficients:
+     (Intercept)               Age              SexM  ChestPainTypeATA  
+          0.3797            0.1202            0.4791           -0.8441  
+ChestPainTypeNAP   ChestPainTypeTA         RestingBP       Cholesterol  
+         -0.5629           -0.3294            0.1410           -0.3136  
+       FastingBS  RestingECGNormal      RestingECGST             MaxHR  
+          0.5068           -0.1138           -0.1196           -0.4199  
+ ExerciseAnginaY           Oldpeak  
+          0.6090            0.6321  
+
+Degrees of Freedom: 642 Total (i.e. Null);  629 Residual
+Null Deviance:      884 
+Residual Deviance: 498.4    AIC: 526.4</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>logModel2<span class="sc">$</span>finalModel</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:  NULL
+
+Coefficients:
+(Intercept)          Age  
+     0.2286       0.5671  
+
+Degrees of Freedom: 642 Total (i.e. Null);  641 Residual
+Null Deviance:      884 
+Residual Deviance: 837.3    AIC: 841.3</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>logModel3<span class="sc">$</span>finalModel</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:  NULL
+
+Coefficients:
+                        (Intercept)                      ExerciseAnginaY  
+                           0.453333                            13.376594  
+                                Age                              Oldpeak  
+                           0.752420                             5.771061  
+                              MaxHR                `ExerciseAnginaY:Age`  
+                          -0.003251                           -10.371745  
+          `ExerciseAnginaY:Oldpeak`                        `Age:Oldpeak`  
+                         -13.189308                            -4.440046  
+            `ExerciseAnginaY:MaxHR`                          `Age:MaxHR`  
+                         -10.354868                            -0.527107  
+                    `Oldpeak:MaxHR`        `ExerciseAnginaY:Age:Oldpeak`  
+                          -4.270088                            11.233205  
+        `ExerciseAnginaY:Age:MaxHR`      `ExerciseAnginaY:Oldpeak:MaxHR`  
+                           8.091418                            10.218443  
+                `Age:Oldpeak:MaxHR`  `ExerciseAnginaY:Age:Oldpeak:MaxHR`  
+                           3.537924                            -8.225794  
+
+Degrees of Freedom: 642 Total (i.e. Null);  627 Residual
+Null Deviance:      884 
+Residual Deviance: 618.2    AIC: 650.2</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">confusionMatrix</span>(<span class="at">reference=</span>test2<span class="sc">$</span>HeartDisease,<span class="at">data=</span><span class="fu">predict</span>(logModel1,<span class="at">newdata=</span>test2))<span class="sc">$</span>overall[<span class="dv">1</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> Accuracy 
+0.8218182 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">confusionMatrix</span>(<span class="at">reference=</span>test2<span class="sc">$</span>HeartDisease,<span class="at">data=</span><span class="fu">predict</span>(logModel2,<span class="at">newdata=</span>test2))<span class="sc">$</span>overall[<span class="dv">1</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> Accuracy 
+0.6327273 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">confusionMatrix</span>(<span class="at">reference=</span>test2<span class="sc">$</span>HeartDisease,<span class="at">data=</span><span class="fu">predict</span>(logModel3,<span class="at">newdata=</span>test2))<span class="sc">$</span>overall[<span class="dv">1</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> Accuracy 
+0.7890909 </code></pre>
+</div>
+</div>
+</section>
+<section id="tree-models" class="level4">
+<h4 class="anchored" data-anchor-id="tree-models">Tree Models</h4>
+<p>For the classification tree model, random forest model, and boosted tree model, I tried three combinations of variables for each, mimicking the options for logistic regression with a full model, an age-only model, and an Angina/Age/Oldpeak/Max HR model</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>treeModel1 <span class="ot">&lt;-</span> <span class="fu">train</span>(HeartDisease<span class="sc">~</span>.,<span class="at">data=</span>training2,<span class="at">method=</span><span class="st">"rpart"</span>,<span class="at">preProcess=</span><span class="fu">c</span>(<span class="st">"center"</span>,<span class="st">"scale"</span>),<span class="at">trControl=</span><span class="fu">trainControl</span>(<span class="at">method=</span><span class="st">"repeatedcv"</span>,<span class="at">number=</span><span class="dv">10</span>,<span class="at">repeats=</span><span class="dv">3</span>),<span class="at">tuneGrid=</span><span class="fu">expand.grid</span>(<span class="at">cp=</span><span class="fu">seq</span>(<span class="dv">0</span>,<span class="fl">0.1</span>,<span class="fl">0.001</span>)))</span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>treeModel2 <span class="ot">&lt;-</span> <span class="fu">train</span>(HeartDisease<span class="sc">~</span>Age,<span class="at">data=</span>training2,<span class="at">method=</span><span class="st">"rpart"</span>,<span class="at">preProcess=</span><span class="fu">c</span>(<span class="st">"center"</span>,<span class="st">"scale"</span>),<span class="at">trControl=</span><span class="fu">trainControl</span>(<span class="at">method=</span><span class="st">"repeatedcv"</span>,<span class="at">number=</span><span class="dv">10</span>,<span class="at">repeats=</span><span class="dv">3</span>),<span class="at">tuneGrid=</span><span class="fu">expand.grid</span>(<span class="at">cp=</span><span class="fu">seq</span>(<span class="dv">0</span>,<span class="fl">0.1</span>,<span class="fl">0.001</span>)))</span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>treeModel3 <span class="ot">&lt;-</span> <span class="fu">train</span>(HeartDisease<span class="sc">~</span>ExerciseAngina<span class="sc">*</span>Age<span class="sc">*</span>Oldpeak<span class="sc">*</span>MaxHR,<span class="at">data=</span>training2,<span class="at">method=</span><span class="st">"rpart"</span>,<span class="at">preProcess=</span><span class="fu">c</span>(<span class="st">"center"</span>,<span class="st">"scale"</span>),<span class="at">trControl=</span><span class="fu">trainControl</span>(<span class="at">method=</span><span class="st">"repeatedcv"</span>,<span class="at">number=</span><span class="dv">10</span>,<span class="at">repeats=</span><span class="dv">3</span>),<span class="at">tuneGrid=</span><span class="fu">expand.grid</span>(<span class="at">cp=</span><span class="fu">seq</span>(<span class="dv">0</span>,<span class="fl">0.1</span>,<span class="fl">0.001</span>)))</span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>forestModel1 <span class="ot">&lt;-</span> <span class="fu">train</span>(HeartDisease<span class="sc">~</span>.,<span class="at">data=</span>training2,<span class="at">method=</span><span class="st">"rf"</span>,<span class="at">preProcess=</span><span class="fu">c</span>(<span class="st">"center"</span>,<span class="st">"scale"</span>),<span class="at">trControl=</span><span class="fu">trainControl</span>(<span class="at">method=</span><span class="st">"repeatedcv"</span>,<span class="at">number=</span><span class="dv">10</span>,<span class="at">repeats=</span><span class="dv">3</span>),<span class="at">tuneGrid=</span><span class="fu">expand.grid</span>(<span class="at">mtry=</span><span class="fu">c</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>)))</span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a>forestModel2 <span class="ot">&lt;-</span> <span class="fu">train</span>(HeartDisease<span class="sc">~</span>Age,<span class="at">data=</span>training2,<span class="at">method=</span><span class="st">"rf"</span>,<span class="at">preProcess=</span><span class="fu">c</span>(<span class="st">"center"</span>,<span class="st">"scale"</span>),<span class="at">trControl=</span><span class="fu">trainControl</span>(<span class="at">method=</span><span class="st">"repeatedcv"</span>,<span class="at">number=</span><span class="dv">10</span>,<span class="at">repeats=</span><span class="dv">3</span>),<span class="at">tuneGrid=</span><span class="fu">expand.grid</span>(<span class="at">mtry=</span><span class="fu">c</span>(<span class="dv">1</span>)))</span>
+<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a>forestModel3 <span class="ot">&lt;-</span> <span class="fu">train</span>(HeartDisease<span class="sc">~</span>ExerciseAngina<span class="sc">*</span>Age<span class="sc">*</span>Oldpeak<span class="sc">*</span>MaxHR,<span class="at">data=</span>training2,<span class="at">method=</span><span class="st">"rf"</span>,<span class="at">preProcess=</span><span class="fu">c</span>(<span class="st">"center"</span>,<span class="st">"scale"</span>),<span class="at">trControl=</span><span class="fu">trainControl</span>(<span class="at">method=</span><span class="st">"repeatedcv"</span>,<span class="at">number=</span><span class="dv">10</span>,<span class="at">repeats=</span><span class="dv">3</span>),<span class="at">tuneGrid=</span><span class="fu">expand.grid</span>(<span class="at">mtry=</span><span class="fu">c</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>)))</span>
+<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-13"><a href="#cb37-13" aria-hidden="true" tabindex="-1"></a>boostModel1 <span class="ot">&lt;-</span> <span class="fu">train</span>(HeartDisease<span class="sc">~</span>.,<span class="at">data=</span>training2,<span class="at">method=</span><span class="st">"gbm"</span>,<span class="at">preProcess=</span><span class="fu">c</span>(<span class="st">"center"</span>,<span class="st">"scale"</span>),<span class="at">trControl=</span><span class="fu">trainControl</span>(<span class="at">method=</span><span class="st">"repeatedcv"</span>,<span class="at">number=</span><span class="dv">10</span>,<span class="at">repeats=</span><span class="dv">3</span>),<span class="at">tuneGrid=</span><span class="fu">expand.grid</span>(<span class="at">n.trees=</span><span class="fu">c</span>(<span class="dv">25</span>,<span class="dv">50</span>,<span class="dv">100</span>,<span class="dv">200</span>),<span class="at">interaction.depth=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>),<span class="at">shrinkage=</span><span class="fl">0.1</span>,<span class="at">n.minobsinnode=</span><span class="dv">10</span>),<span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb37-14"><a href="#cb37-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-15"><a href="#cb37-15" aria-hidden="true" tabindex="-1"></a>boostModel2 <span class="ot">&lt;-</span> <span class="fu">train</span>(HeartDisease<span class="sc">~</span>Age,<span class="at">data=</span>training2,<span class="at">method=</span><span class="st">"gbm"</span>,<span class="at">preProcess=</span><span class="fu">c</span>(<span class="st">"center"</span>,<span class="st">"scale"</span>),<span class="at">trControl=</span><span class="fu">trainControl</span>(<span class="at">method=</span><span class="st">"repeatedcv"</span>,<span class="at">number=</span><span class="dv">10</span>,<span class="at">repeats=</span><span class="dv">3</span>),<span class="at">tuneGrid=</span><span class="fu">expand.grid</span>(<span class="at">n.trees=</span><span class="fu">c</span>(<span class="dv">25</span>,<span class="dv">50</span>,<span class="dv">100</span>,<span class="dv">200</span>),<span class="at">interaction.depth=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>),<span class="at">shrinkage=</span><span class="fl">0.1</span>,<span class="at">n.minobsinnode=</span><span class="dv">10</span>),<span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb37-16"><a href="#cb37-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-17"><a href="#cb37-17" aria-hidden="true" tabindex="-1"></a>boostModel3 <span class="ot">&lt;-</span> <span class="fu">train</span>(HeartDisease<span class="sc">~</span>ExerciseAngina<span class="sc">*</span>Age<span class="sc">*</span>Oldpeak<span class="sc">*</span>MaxHR,<span class="at">data=</span>training2,<span class="at">method=</span><span class="st">"gbm"</span>,<span class="at">preProcess=</span><span class="fu">c</span>(<span class="st">"center"</span>,<span class="st">"scale"</span>),<span class="at">trControl=</span><span class="fu">trainControl</span>(<span class="at">method=</span><span class="st">"repeatedcv"</span>,<span class="at">number=</span><span class="dv">10</span>,<span class="at">repeats=</span><span class="dv">3</span>),<span class="at">tuneGrid=</span><span class="fu">expand.grid</span>(<span class="at">n.trees=</span><span class="fu">c</span>(<span class="dv">25</span>,<span class="dv">50</span>,<span class="dv">100</span>,<span class="dv">200</span>),<span class="at">interaction.depth=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>),<span class="at">shrinkage=</span><span class="fl">0.1</span>,<span class="at">n.minobsinnode=</span><span class="dv">10</span>),<span class="at">verbose =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Comparing the tree models, we see that according to the prediction accuracy the full model again should be selected, with an optimal tuning of cp noted below.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">confusionMatrix</span>(<span class="at">reference=</span>test2<span class="sc">$</span>HeartDisease,<span class="at">data=</span><span class="fu">predict</span>(treeModel1,<span class="at">newdata=</span>test2))<span class="sc">$</span>overall[<span class="dv">1</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> Accuracy 
+0.8181818 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">confusionMatrix</span>(<span class="at">reference=</span>test2<span class="sc">$</span>HeartDisease,<span class="at">data=</span><span class="fu">predict</span>(treeModel2,<span class="at">newdata=</span>test2))<span class="sc">$</span>overall[<span class="dv">1</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> Accuracy 
+0.6727273 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="fu">confusionMatrix</span>(<span class="at">reference=</span>test2<span class="sc">$</span>HeartDisease,<span class="at">data=</span><span class="fu">predict</span>(treeModel3,<span class="at">newdata=</span>test2))<span class="sc">$</span>overall[<span class="dv">1</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> Accuracy 
+0.7890909 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>treeModel1<span class="sc">$</span>best</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>      cp
+16 0.015</code></pre>
+</div>
+</div>
+<p>Comparing the forest models, we see that according to the prediction accuracy the full variable model again should be selected, with optimal tuning of mtry noted below.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="fu">confusionMatrix</span>(<span class="at">reference=</span>test2<span class="sc">$</span>HeartDisease,<span class="at">data=</span><span class="fu">predict</span>(forestModel1,<span class="at">newdata=</span>test2))<span class="sc">$</span>overall[<span class="dv">1</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> Accuracy 
+0.8472727 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="fu">confusionMatrix</span>(<span class="at">reference=</span>test2<span class="sc">$</span>HeartDisease,<span class="at">data=</span><span class="fu">predict</span>(forestModel2,<span class="at">newdata=</span>test2))<span class="sc">$</span>overall[<span class="dv">1</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Accuracy 
+    0.64 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="fu">confusionMatrix</span>(<span class="at">reference=</span>test2<span class="sc">$</span>HeartDisease,<span class="at">data=</span><span class="fu">predict</span>(forestModel3,<span class="at">newdata=</span>test2))<span class="sc">$</span>overall[<span class="dv">1</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> Accuracy 
+0.7709091 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>forestModel1<span class="sc">$</span>bestTune</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  mtry
+1    1</code></pre>
+</div>
+</div>
+<p>Comparing the boosted models, we see that according to prediction accuracy, the full variable model again should be selected, with optimal tuning variables noted below</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="fu">confusionMatrix</span>(<span class="at">reference=</span>test2<span class="sc">$</span>HeartDisease,<span class="at">data=</span><span class="fu">predict</span>(boostModel1,<span class="at">newdata=</span>test2))<span class="sc">$</span>overall[<span class="dv">1</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> Accuracy 
+0.8581818 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="fu">confusionMatrix</span>(<span class="at">reference=</span>test2<span class="sc">$</span>HeartDisease,<span class="at">data=</span><span class="fu">predict</span>(boostModel2,<span class="at">newdata=</span>test2))<span class="sc">$</span>overall[<span class="dv">1</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> Accuracy 
+0.6327273 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="fu">confusionMatrix</span>(<span class="at">reference=</span>test2<span class="sc">$</span>HeartDisease,<span class="at">data=</span><span class="fu">predict</span>(boostModel3,<span class="at">newdata=</span>test2))<span class="sc">$</span>overall[<span class="dv">1</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> Accuracy 
+0.7927273 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a>boostModel1<span class="sc">$</span>bestTune</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  n.trees interaction.depth shrinkage n.minobsinnode
+7     100                 2       0.1             10</code></pre>
+</div>
+</div>
+<p>Lastly, comparing all of our models together, we see that the ultimate winner for best prediction of this data is the Boosted Tree model using all possible explanatory variables, and with tuning variables as noted below. Although it should be noted that with the calculated confidence intervals, most of these results do technically overlap, suggesting it could be preferable to instead choose the least resource intensive model.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb62"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a>knnResult <span class="ot">&lt;-</span> <span class="fu">confusionMatrix</span>(<span class="at">data=</span>test<span class="sc">$</span>HeartDisease,<span class="at">reference=</span><span class="fu">predict</span>(knnModel,<span class="at">newdata=</span>test))<span class="sc">$</span>overall[<span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">4</span>)]</span>
+<span id="cb62-2"><a href="#cb62-2" aria-hidden="true" tabindex="-1"></a>logResult <span class="ot">&lt;-</span> <span class="fu">confusionMatrix</span>(<span class="at">reference=</span>test2<span class="sc">$</span>HeartDisease,<span class="at">data=</span><span class="fu">predict</span>(logModel1,<span class="at">newdata=</span>test2))<span class="sc">$</span>overall[<span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">4</span>)]</span>
+<span id="cb62-3"><a href="#cb62-3" aria-hidden="true" tabindex="-1"></a>treeResult <span class="ot">&lt;-</span> <span class="fu">confusionMatrix</span>(<span class="at">reference=</span>test2<span class="sc">$</span>HeartDisease,<span class="at">data=</span><span class="fu">predict</span>(treeModel1,<span class="at">newdata=</span>test2))<span class="sc">$</span>overall[<span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">4</span>)]</span>
+<span id="cb62-4"><a href="#cb62-4" aria-hidden="true" tabindex="-1"></a>forestResult <span class="ot">&lt;-</span> <span class="fu">confusionMatrix</span>(<span class="at">reference=</span>test2<span class="sc">$</span>HeartDisease,<span class="at">data=</span><span class="fu">predict</span>(forestModel1,<span class="at">newdata=</span>test2))<span class="sc">$</span>overall[<span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">4</span>)]</span>
+<span id="cb62-5"><a href="#cb62-5" aria-hidden="true" tabindex="-1"></a>boostResult <span class="ot">&lt;-</span> <span class="fu">confusionMatrix</span>(<span class="at">reference=</span>test2<span class="sc">$</span>HeartDisease,<span class="at">data=</span><span class="fu">predict</span>(boostModel1,<span class="at">newdata=</span>test2))<span class="sc">$</span>overall[<span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">4</span>)]</span>
+<span id="cb62-6"><a href="#cb62-6" aria-hidden="true" tabindex="-1"></a>results <span class="ot">&lt;-</span>  <span class="fu">as.data.frame</span>(<span class="fu">bind_cols</span>(knnResult,logResult,treeResult,forestResult,boostResult))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+• `` -&gt; `...1`
+• `` -&gt; `...2`
+• `` -&gt; `...3`
+• `` -&gt; `...4`
+• `` -&gt; `...5`</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb64"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(results) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"kNN"</span>,<span class="st">"Logistic Regression"</span>,<span class="st">"Classification Tree"</span>,<span class="st">"Random Forest"</span>,<span class="st">"Boosted Tree"</span>)</span>
+<span id="cb64-2"><a href="#cb64-2" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(results) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Accuracy (Percentage)"</span>,<span class="st">"Lower CI"</span>,<span class="st">"Upper CI"</span>)</span>
+<span id="cb64-3"><a href="#cb64-3" aria-hidden="true" tabindex="-1"></a>results</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                            kNN Logistic Regression Classification Tree
+Accuracy (Percentage) 0.8218182           0.8218182           0.8181818
+Lower CI              0.7713710           0.7713710           0.7674219
+Upper CI              0.8651766           0.8651766           0.8619357
+                      Random Forest Boosted Tree
+Accuracy (Percentage)     0.8472727    0.8581818
+Lower CI                  0.7992153    0.8112668
+Upper CI                  0.8876574    0.8971707</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb66"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a>boostModel1<span class="sc">$</span>bestTune</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  n.trees interaction.depth shrinkage n.minobsinnode
+7     100                 2       0.1             10</code></pre>
+</div>
+</div>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->
